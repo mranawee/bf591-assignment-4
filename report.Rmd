@@ -1,13 +1,12 @@
 ---
-title: "Assignment 5"
+title: "Assignment 4"
 author: "Dakota Hawkins"
 date: "1/13/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE, message=FALSE}
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd('/home/dakota/Data/bf528/assignment5')
 source("main.R")
 ```
 
@@ -21,16 +20,16 @@ size of our dataset if memory issues are a constraint. Implement the
 the count matrix, and return a list containing both the name of the returned genes,
 and the counts of each gene for every sample.
 
-```{r, message=FALSE}
-count_data <- readr::read_tsv("hw5_counts.tsv")
+```{r, message=FALSE, echo=FALSE, results='hide',message=FALSE}
+count_data <- readr::read_tsv("verse_counts.tsv")
 knitr::kable(head(count_data))
 ```
-```{r}
+```{r, message=FALSE, echo=FALSE, results='hide',message=FALSE}
 filtered_results <- filter_zero_var_genes(count_data)
 genes <- filtered_results$genes
 print(genes[c(1:9)])
 ```
-```{r}
+```{r, message=FALSE, echo=FALSE, results='hide',message=FALSE}
 count_matrix <- filtered_results$matrix
 knitr::kable(head(count_matrix))
 ```
@@ -43,7 +42,7 @@ from sample names located in the columns of our count matrix. Implement the
 `meta_info_from_labels` function to extract the sample name, timepoint, and
 replicate number from each sample name. The function should then return a
 `tibble` with all the relevant information.
-```{r}
+```{r,results='hide',message=FALSE,echo=FALSE}
 meta <- meta_info_from_labels(colnames(count_matrix))
 knitr::kable(meta)
 ```
@@ -63,7 +62,7 @@ parameter. Color each boxplot by its respective sample name.
 
 *Hint*: you will
 have to reshape your count matrix from a _wide_ format, to a _long_ format. 
-```{r}
+```{r, echo=FALSE, results='hide',message=FALSE}
 plot_sample_distributions(count_matrix, TRUE, "Sample Distributions (Log10(Raw Counts))")
 ```
 
@@ -77,7 +76,7 @@ implement the `plot_variance_vs_mean()` function to plot gene variance on the
 y-axis vs mean count rank on the x-axis, where with $p$ genes, the most highly
 expressed gene will have rank $p$ and the most lowly expressed gene will have
 rank $1$. 
-```{r}
+```{r, echo=FALSE,results='hide',message=FALSE}
 plot_variance_vs_mean(count_matrix, TRUE, "Variance vs. Mean (Log10(Raw Counts))")
 ```
 
@@ -95,7 +94,7 @@ where each dot represents a sample and is colored by its respective sample name.
 *Hint*: pay close attention to the `prcomp` documentation for running PCA, and
 ensure you're providing the count matrix in the correct orientation for running
 PCA over the _samples_.
-```{r}
+```{r, echo=FALSE,results='hide',message=FALSE}
 plot_pca(count_matrix, meta, 'Raw Counts PCA')
 ```
 
@@ -119,7 +118,7 @@ the provided formula. Often we will want to work with log-transformed counts
 as they are useful for stabilizing variances and possibly fitting assumed
 statistical distributions for common tests. After calculating the CPM matrix,
 ensure the returned matrix is `log2` transformed. 
-```{r}
+```{r, echo=FALSE,results='hide',message=FALSE}
 cpm_matrix <- normalize_by_cpm(count_matrix)
 ```
 
@@ -130,7 +129,7 @@ sample distributions, the relationship between variance and average expression
 values, and plotting the samples along the first two PCs. Does the normalization
 seem effective? What, if any, are the major differences observed between the
 plots produced by raw counts?
-```{r}
+```{r, echo=FALSE,results='hide',message=FALSE}
 plot_sample_distributions(cpm_matrix, FALSE, "Sample Distribution (log2(CPM))")
 plot_variance_vs_mean(cpm_matrix, FALSE, "Variance vs Mean (log2(CPM))")
 plot_pca(cpm_matrix, meta, 'CPM PCA')
@@ -153,7 +152,7 @@ function as well as a formula describing the comparison of interest. *Hint*: the
 previously link DESeq2 documention explicity describes how to set up and calculate
 normalized values. For our case, we are interested in the counts generated using
 the `DESeq2::vst` function.
-```{r}
+```{r, echo=FALSE,results='hide',message=FALSE}
 deseq_normed <- deseq_normalize(count_matrix, meta, ~ timepoint)
 ```
 
@@ -164,7 +163,7 @@ sample distributions, the relationship between variance and average expression
 values, and plotting the samples along the first two PCs. How does DESeq2
 normalization compare to CPM? Raw values? Which method, if any, seems most
 effective?
-```{r}
+```{r, echo=FALSE,results='hide',message=FALSE}
 plot_sample_distributions(deseq_normed, FALSE, "Sample Distribution (DESeq2)")
 plot_variance_vs_mean(deseq_normed, FALSE, "Variance vs Mean (DESeq2)")
 plot_pca(deseq_normed, meta, 'DESeq2 Normalized PCA')
