@@ -30,18 +30,11 @@ functions will be run outside of their respective markdown environments.
 
 ## 1.  Reading and filtering count data
 
-To begin, let's read the raw count matrix, and filter out all zero-variance genes.
-Filtering out zero-variance genes is necessary for several common analysis steps,
-such as Principal Component Analysis (PCA), and can be helpful to reduce the
-size of our dataset if memory issues are a constraint. Implement the `read_data` 
-function in `main.R` to read in the dataset, then use the `filter_zero_var_genes` 
-function, also in `main.R` to remove zero variance genes from the count matrix, 
-and return a list containing both the name of the returned genes, and the counts 
-of each gene for every sample.
+To begin, let's read the raw count matrix, named `verse_counts.tsv`, and filter out all zero-variance genes. Filtering out zero-variance genes is necessary for several common analysis steps, such as Principal Component Analysis (PCA), and can be helpful to reduce the size of our dataset if memory issues are a constraint. Implement the `read_data` function in `main.R` to read in the dataset, then use the `filter_zero_var_genes` function, also in `main.R` to remove zero variance genes from the count matrix, and return a list containing both the name of the returned genes, and the counts of each gene for every sample.
 
 1a. import data
 ```{r}
-#Read in raw_counts.tsv and display the head of the resulting tibble
+#Read in verse_counts.tsv and display the head of the resulting tibble
 
 ```
 
