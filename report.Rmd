@@ -5,6 +5,16 @@ date: "1/13/2022"
 output: html_document
 ---
 
+# Welcome to Assignment 4
+
+### Before we begin
+
+Unlike Assignments 1-3, you will no longer be provided with the RMarkdown code. All of the code blocks here are empty and accompanied by instructions for what is expected in the code block. Do not neglect your `main.R` skeleton file as the functions there will constitute most of the points you earn. 
+
+_THE BULK OF YOUR GRADE WILL BE ON YOUR WORK IN `main.R`_
+
+Anything that is specified to occur in functions you create MUST be in the `main.R` file. While you theoretically CAN do some or all of the homework in this .Rmd file, it is bad practice to have your behind-the-scenes 'backend' coding in the same files as your user-facing 'frontend' report. Your `report.html` may be referenced to visually check any graphical outputs you may generate for this and all future assignments, but your `main.R` functions will be run outside of their respective markdown environments.
+
 ```{r setup, include=FALSE, message=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 source("main.R")
