@@ -1,10 +1,19 @@
-#Imports
-library(tibble)
-library(tidyr)
-library(readr)
-library(stringr)
-library(ggplot2)
-library(DESeq2)
+#Load Packages
+
+
+#' Load data from a tsv located at a specific location
+#'
+#' @param filename (str):
+#'
+#' @return tibble: a (gene x sample) matrix with gene names as column names
+#' 
+#' @export
+#'
+#' @examples
+#' `gene_data <- read_data('file/path/to/file.tsv')`
+read_data <- function(filename){
+  return(NULL)
+}
 
 
 #' Filter zero-variance genes from count matrix.
@@ -18,9 +27,7 @@ library(DESeq2)
 #' @examples
 #' `filtered_counts <- filter_zero_var_genes(count_data)`
 filter_zero_var_genes <- function(count_data) {
-  genes <- count_data$gene
-  variance <- apply(count_data[-c(1)], 1, var)
-  return(list(genes=genes[variance > 0], matrix=count_data[variance > 0, -c(1)]))
+  return(NULL)
 }
 
 
@@ -36,7 +43,7 @@ filter_zero_var_genes <- function(count_data) {
 #' `timepoint_from_sample("vAd_1")`
 #' `"Ad"`
 timepoint_from_sample <- function(x) {
-  return(stringr::str_extract(x, "(?<=^v)(.*?)(?=_)"))
+  return(NULL)
 }
 
 
@@ -51,7 +58,7 @@ timepoint_from_sample <- function(x) {
 #' `sample_number("vAd_1")`
 #' `"1"`
 sample_number <- function(x) {
-  return(stringr::str_split(x , "_")[[1]][2])
+  return(NULL)
 }
 
 
@@ -67,9 +74,7 @@ sample_number <- function(x) {
 #' @examples
 #' `meta_info_from_labels(colnames(count_matrix))`
 meta_info_from_labels <- function(sample_names) {
-  timepoints <- sapply(sample_names, timepoint_from_sample)
-  replicate <- sapply(sample_names, sample_number)
-  return(tibble::tibble(sample=sample_names, timepoint=timepoints, replicate=replicate))
+  return(NULL)
 }
 
 
@@ -83,7 +88,7 @@ meta_info_from_labels <- function(sample_names) {
 #' @examples
 #' `get_library_size(count_matrix)`
 get_library_size <- function(count_matrix) {
-  return (apply(count_matrix, 2, sum))
+  return(NULL)
 }
 
 
@@ -102,9 +107,7 @@ get_library_size <- function(count_matrix) {
 #' @examples
 #' `normalize_by_cpm(count_matrix)`
 normalize_by_cpm <- function(count_matrix) { 
-  library_sizes <- get_library_size(count_matrix)
-  scale_factors <- library_sizes / 10^6
-  return(log2((count_matrix + 1)/ (scale_factors + 1)))
+  return(NULL)
 }
 
 
@@ -121,13 +124,7 @@ normalize_by_cpm <- function(count_matrix) {
 #' @examples
 #' `deseq_normalize(count_matrix, meta_data, ~ timepoint)`
 deseq_normalize <- function(count_matrix, meta_data, design_formula) {
-  dds <- DESeq2::DESeqDataSetFromMatrix(
-    countData=count_matrix,
-    colData=meta_data,
-    design=design_formula
-  )
-  vsd <- DESeq2::vst(dds, blind=FALSE)
-  return (tibble::as_tibble(SummarizedExperiment::assay(vsd)))
+  return(NULL)
 }
 
 
@@ -146,17 +143,7 @@ deseq_normalize <- function(count_matrix, meta_data, design_formula) {
 #' @examples
 #' `plot_pca(count_matrix, meta, "Raw Count PCA")`
 plot_pca <- function(count_matrix, meta, title="") {
-  pca <- prcomp(t(count_matrix))
-  plot_data <- meta
-  plot_data$PC1 <- pca$x[ , 1]
-  plot_data$PC2 <- pca$x[ , 2]
-  percent_var <- pca$sdev^2 / sum( pca$sdev^2 )
-  pca_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(x=PC1, y=PC2, col=timepoint)) + 
-    ggplot2::geom_point() +
-    ggplot2::xlab(paste0("PC1: ",round(percent_var[1] * 100),"% variance")) +
-    ggplot2::ylab(paste0("PC2: ",round(percent_var[2] * 100),"% variance")) +
-    ggplot2::ggtitle(title)
-  return(pca_plot)
+  return(NULL)
 }
 
 
@@ -174,17 +161,7 @@ plot_pca <- function(count_matrix, meta, title="") {
 #' @examples
 #' `plot_sample_distributions(count_matrix, scale_y_axis=TRUE, title='Raw Count Distributions')`
 plot_sample_distributions <- function(count_matrix, scale_y_axis=FALSE, title="") {
-  long_counts <- tidyr::pivot_longer(count_matrix,
-                                     cols=colnames(count_matrix),
-                                     names_to='sample',
-                                     values_to='counts')
-  dist_plot <- ggplot2::ggplot(long_counts, ggplot2::aes(x=sample, y=counts, col=sample)) +
-    ggplot2::geom_boxplot() + 
-    ggplot2::ggtitle(title)
-  if (scale_y_axis) {
-    dist_plot <- dist_plot + ggplot2::scale_y_log10()
-  }
-  return(dist_plot)
+  return(NULL)
 }
 
 
@@ -207,18 +184,5 @@ plot_sample_distributions <- function(count_matrix, scale_y_axis=FALSE, title=""
 #' @examples
 #' `plot_variance_vs_mean(count_matrix, scale_y_axis=TRUE, title='variance vs mean (raw counts)')`
 plot_variance_vs_mean <- function(count_matrix, scale_y_axis=FALSE, title="") {
-  means <- apply(count_matrix, 1, mean)
-  variances <- apply(count_matrix, 1, var)
-  plot_data <- tibble::tibble(mean=means, variance=variances)
-  plot_data$rank <- rank(plot_data$mean)
-  mv_plot <- ggplot2::ggplot(plot_data, aes(x=rank, y=variance)) + 
-    ggplot2::geom_point(alpha=0.5) +
-    ggplot2::geom_smooth() + 
-    ggplot2::xlab("Rank(Mean)") + 
-    ggplot2::ylab("Variance") + 
-    ggplot2::ggtitle(title)
-  if (scale_y_axis) {
-    mv_plot <- mv_plot + ggplot2::scale_y_log10()
-  }
-  return(mv_plot)
+  return(NULL)
 }
