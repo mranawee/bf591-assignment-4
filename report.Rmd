@@ -1,7 +1,7 @@
 ---
 title: "Assignment 4"
 author: "Dakota Hawkins"
-date: "1/13/2022"
+date: "2/22/2022"
 output: html_document
 ---
 
@@ -22,13 +22,7 @@ source("main.R")
 
 ## 1.  Reading and filtering count data
 
-To begin, let's read the raw count matrix, and filter out all zero-variance genes.
-Filtering out zero-variance genes is necessary for several common analysis steps,
-such as Principal Component Analysis (PCA), and can be helpful to reduce the
-size of our dataset if memory issues are a constraint. Implement the
-`filter_zero_var_genes` function in `HW5.R` to remove zero variance genes from
-the count matrix, and return a list containing both the name of the returned genes,
-and the counts of each gene for every sample.
+To begin, let's read the raw count matrix, named `verse_counts.tsv`, and filter out all zero-variance genes. Filtering out zero-variance genes is necessary for several common analysis steps, such as Principal Component Analysis (PCA), and can be helpful to reduce the size of our dataset if memory issues are a constraint. Implement the `filter_zero_var_genes` function in `HW5.R` to remove zero variance genes from the count matrix, and return a list containing both the name of the returned genes, and the counts of each gene for every sample.
 
 ```{r, message=FALSE, echo=FALSE, results='hide',message=FALSE}
 count_data <- readr::read_tsv("verse_counts.tsv")
@@ -58,52 +52,29 @@ knitr::kable(meta)
 ```
 
 ## 3. Count distributions and normalization
-Often we will want to normalize gene counts between samples so that comparisons
-are more reliable. Given read counts are a relative measure of abundance,
-normalization is a necessary step during RNAseq analysis when samples may have
+Often we will want to normalize gene counts between samples so that comparisons are more reliable. Given read counts are a relative measure of abundance, normalization is a necessary step during RNAseq analysis when samples may have
 differing numbers of total reads. 
 
 ### 3a. Visualizing count distributions via boxplots 
-To visualize these differences, implement the
-`plot_sample_distributions()` function using `ggplot2` to create boxplots 
-visualizing the read counts for each sample over all genes. Ensure the function
-is able to scale the y-axis to $log$ values if specified by the `scale_y_axis`
-parameter. Color each boxplot by its respective sample name.
+To visualize these differences, implement the `plot_sample_distributions()` function using `ggplot2` to create boxplots visualizing the read counts for each sample over all genes. Ensure the function is able to scale the y-axis to $log$ values if specified by the `scale_y_axis` parameter. Color each boxplot by its respective sample name.
 
-*Hint*: you will
-have to reshape your count matrix from a _wide_ format, to a _long_ format. 
+*Hint*: Reshape your count matrix from a _wide_ format, to a _long_ format. 
 ```{r, echo=FALSE, results='hide',message=FALSE}
 plot_sample_distributions(count_matrix, TRUE, "Sample Distributions (Log10(Raw Counts))")
 ```
 
 ### 3b. Count variance vs mean count
-Another aspect of RNAseq data that often needs to be accounted for the is 
-relationship between variance and mean expression: that is, more highly
-expressed genes will exhibit higher variance values. This is problematic as
-interesting patterns controlled by genes at naturally lower expression values
-will be washed out by more highly expressed genes. To visualize this phenomenon,
-implement the `plot_variance_vs_mean()` function to plot gene variance on the
-y-axis vs mean count rank on the x-axis, where with $p$ genes, the most highly
-expressed gene will have rank $p$ and the most lowly expressed gene will have
-rank $1$. 
+Another aspect of RNAseq data that often needs to be accounted for the is relationship between variance and mean expression: that is, more highly expressed genes will exhibit higher variance values. This is problematic as interesting patterns controlled by genes at naturally lower expression values will be washed out by more highly expressed genes. To visualize this phenomenon, implement the `plot_variance_vs_mean()` function to plot gene variance on the y-axis vs mean count rank on the x-axis, where with $p$ genes, the most highly expressed gene will have rank $p$ and the most lowly expressed gene will have rank $1$. 
+
 ```{r, echo=FALSE,results='hide',message=FALSE}
 plot_variance_vs_mean(count_matrix, TRUE, "Variance vs. Mean (Log10(Raw Counts))")
 ```
 
 
 ### 3c. Visualizing patterns with PCA
-Principal Component Analysis (PCA) is a dimension reduction technique often used
-to extract the most meaningful structure in a dataset to fewer dimensions. This
-is incredibly useful when trying to visualize your data in only a few dimensions
-(e.g. 2 PCs compared to 2000 genes), and when trying to build models with only
-a few orthogonal data features. To visualize the structure in our dataset, 
-implement the `plot_pca()` function to both run PCA on a provided count matrix,
-but then to also plot the first two PCs of the dataset using a scatterplot,
-where each dot represents a sample and is colored by its respective sample name.
+Principal Component Analysis (PCA) is a dimension reduction technique often used to extract the most meaningful structure in a dataset to fewer dimensions. This is incredibly useful when trying to visualize your data in only a few dimensions (e.g. 2 PCs compared to 2000 genes), and when trying to build models with only a few orthogonal data features. To visualize the structure in our dataset, implement the `plot_pca()` function to both run PCA on a provided count matrix, but then to also plot the first two PCs of the dataset using a scatterplot, where each dot represents a sample and is colored by its respective sample name.
 
-*Hint*: pay close attention to the `prcomp` documentation for running PCA, and
-ensure you're providing the count matrix in the correct orientation for running
-PCA over the _samples_.
+*Hint*: pay close attention to the `prcomp` documentation for running PCA, and ensure you're providing the count matrix in the correct orientation for running PCA over the _samples_.
 ```{r, echo=FALSE,results='hide',message=FALSE}
 plot_pca(count_matrix, meta, 'Raw Counts PCA')
 ```
@@ -123,22 +94,14 @@ columns.
 
 ### 4a. CPM matrix calculation
 
-Implement the `normalize_by_cpm` function to normalize a raw count matrix given
-the provided formula. Often we will want to work with log-transformed counts
-as they are useful for stabilizing variances and possibly fitting assumed
-statistical distributions for common tests. After calculating the CPM matrix,
-ensure the returned matrix is `log2` transformed. 
+Implement the `normalize_by_cpm` function to normalize a raw count matrix given the provided formula. Often we will want to work with log-transformed counts as they are useful for stabilizing variances and possibly fitting assumed statistical distributions for common tests. After calculating the CPM matrix, ensure the returned matrix is `log2` transformed. 
 ```{r, echo=FALSE,results='hide',message=FALSE}
 cpm_matrix <- normalize_by_cpm(count_matrix)
 ```
 
 ### 4b. Visualizing CPM 
 
-Visualize the effect of CPM normalization on the dataset by visualizing the
-sample distributions, the relationship between variance and average expression
-values, and plotting the samples along the first two PCs. Does the normalization
-seem effective? What, if any, are the major differences observed between the
-plots produced by raw counts?
+Visualize the effect of CPM normalization on the dataset by visualizing the sample distributions, the relationship between variance and average expression values, and plotting the samples along the first two PCs. Does the normalization seem effective? What, if any, are the major differences observed between the plots produced by raw counts?
 ```{r, echo=FALSE,results='hide',message=FALSE}
 plot_sample_distributions(cpm_matrix, FALSE, "Sample Distribution (log2(CPM))")
 plot_variance_vs_mean(cpm_matrix, FALSE, "Variance vs Mean (log2(CPM))")
@@ -147,32 +110,21 @@ plot_pca(cpm_matrix, meta, 'CPM PCA')
 
 ## 5. Normalizing with DESeq2
 
-DESeq2 is a common and prolific tool for performing differential expression
-analysis (DEA) in RNAseq data. Within that process, DESeq2 implements its own
-normalization procedure prior to performing DEA for more reliably identified
-differential genes. You can read more about it [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#data-transformations-and-visualization).
+DESeq2 is a common and prolific tool for performing differential expression analysis (DEA) in RNAseq data. Within that process, DESeq2 implements its own normalization procedure prior to performing DEA for more reliably identified differential genes. You can read more about it [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#data-transformations-and-visualization).
 
 ### 5a. Variance stabilized counts with DESeq2
 
-To normalize our data with DESeq2, implement the `deseq_normalize()` function
-to extract the variance stabilized counts. Unlike CPM normalization, DESeq
-directly considers the comparison of interest (in our case `timepoint`), so 
-ensure you are both appropriately passing the sample metadata to the `deseq_normalize`
-function as well as a formula describing the comparison of interest. *Hint*: the
-previously link DESeq2 documention explicity describes how to set up and calculate
-normalized values. For our case, we are interested in the counts generated using
-the `DESeq2::vst` function.
+To normalize our data with DESeq2, implement the `deseq_normalize()` function to extract the variance stabilized counts. Unlike CPM normalization, DESeq directly considers the comparison of interest (in our case `timepoint`), so ensure you are both appropriately passing the sample metadata to the `deseq_normalize` function as well as a formula describing the comparison of interest. 
+
+*Hint*: the previously link DESeq2 documention explicity describes how to set up and calculate normalized values. For our case, we are interested in the counts generated using the `DESeq2::vst` function.
 ```{r, echo=FALSE,results='hide',message=FALSE}
 deseq_normed <- deseq_normalize(count_matrix, meta, ~ timepoint)
 ```
 
 ### 5b. Visualizing DESeq2 Normalizion
 
-Visualize the effect of DESeq2 normalization on the dataset by visualizing the
-sample distributions, the relationship between variance and average expression
-values, and plotting the samples along the first two PCs. How does DESeq2
-normalization compare to CPM? Raw values? Which method, if any, seems most
-effective?
+Visualize the effect of DESeq2 normalization on the dataset by visualizing the sample distributions, the relationship between variance and average expression values, and plotting the samples along the first two PCs. How does DESeq2 normalization compare to CPM? Raw values? Which method, if any, seems most effective?
+
 ```{r, echo=FALSE,results='hide',message=FALSE}
 plot_sample_distributions(deseq_normed, FALSE, "Sample Distribution (DESeq2)")
 plot_variance_vs_mean(deseq_normed, FALSE, "Variance vs Mean (DESeq2)")
