@@ -1,5 +1,6 @@
 #Load Packages
-
+library(DESeq2)
+library(tidyverse)
 
 #' Load a tsv located at specific location `filename` into a tibble
 #'
