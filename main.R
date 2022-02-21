@@ -1,171 +1,214 @@
 #Imports
-library(tibble)
-library(tidyr)
-library(readr)
-library(stringr)
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
 library(DESeq2)
 
-load_data <- function(path) {
-  read_tsv(path) %>%
-    return()
-}
-counts <- load_data("verse_counts.tsv")
-
-#' Filter zero-variance genes from count matrix.
+#' Load a tsv located at specific location `filename` into a tibble
 #'
-#' @param count_data tibble: a (gene x sample) matrix of raw read counts
-#' where the first column called `gene` has the gene name and all subsequent
-#' columns have sample counts
-#' 
-#' @return tibble: a (gene x sample) matrix of raw reads with zero variance
-#' genes removed, where the first column is called `gene` and contains gene
-#' name
-#' 
-#' @export
 #'
-#' @examples
-#' `filtered_counts <- filter_zero_var_genes(count_data)`
-filter_zero_var_genes <- function(count_data) {
-  
-  # non-tidyverse
-  gene_vars <- apply(count_data[,-c(1)], 1, var)
-  return(count_data[gene_vars!=0,])
-  
-  # tidyverse
-  nonzero_gene_vars <- pivot_longer(count_data, -c(gene),names_to="sample")  %>%
-    group_by(gene) %>%
-    summarize(var=var(value)) %>%
-    filter(var!=0)
-  
-  count_data %>%
-    filter(gene %in% nonzero_gene_vars$gene) %>%
-  return()
+#' @param filename (str): the path to a specific file (ie 'file/path/to/file.tsv')
+#'
+#' @return tibble: a (g x m) tibble with a 'gene' column followed by
+#' sample names as column names. 
+#' 
+#' @note Column 'gene' should be first and the only column to contain strings.
+#' Data in sample_name columns CANNOT be strings
+#' 
+#' @example `verse_counts <- read_data('verse_counts.tsv')`
 
+read_data <- function(filename){
+  read_tsv(filename)
 }
-filter_zero_var_genes(counts)
+
+
+#' Filter out genes with zero variance
+#'
+#'
+#' @param verse_counts tibble: a (g x m) tibble of raw read counts
+#'
+#' @return tibble: a (n x m) tibble of raw reads with genes that have 
+#' zero variance across samples removed
+#' 
+#' @note (g >= n)
+#' 
+#' @example `filtered_counts <- filter_zero_var_genes(verse_counts)`
+
+filter_zero_var_genes <- function(verse_counts) {
+  # # non-tidyverse
+  # #Method 1
+  gene_vars <- apply(verse_counts[,-c(1)], 1, var)
+  return(verse_counts[gene_vars!=0,])
+  
+  # #tidyverse
+  # #Method 2
+  # nonzero_gene_vars <- tidyr::pivot_longer(count_data, -c(gene),names_to="sample")  %>%
+  #   dplyr::group_by(gene) %>%
+  #   dplyr::summarize(var=var(value)) %>%
+  #   dplyr::filter(var!=0) %>%
+  #   return()
+  # count_data %>%
+  #   dplyr::filter(gene %in% nonzero_gene_vars$gene) %>%
+  #   return()
+}
 
 
 #' Extract time point information from sample name
 #'
-#' @param x string: sample name from count matrix.
+#'
+#' @param str string: sample name from count data.
 #'
 #' @return string: string character representing sample time point 
-#' @export
 #'
-#' @examples
-#' `timepoint_from_sample("vAd_1")`
-#' `"Ad"`
+#' @example `timepoint_from_sample("vAd_1")`
+#' output:`"Ad"`
+
 timepoint_from_sample <- function(x) {
   return(stringr::str_extract(x, "(?<=^v)(.*?)(?=_)"))
 }
 
 
-#' Grab sample number from sample name
+#' Grab sample replicate number from sample name
 #'
-#' @param x  string: sample name from count matrix.
+#'
+#' @param str  string: sample name from count data.
 #'
 #' @return string: string character represent sample replicate number
-#' @export
+#' 
+#' @note you may choose to return numeric values instead of strings here, either
+#' way will be acceptable
 #'
-#' @examples
-#' `sample_number("vAd_1")`
-#' `"1"`
-sample_number <- function(x) {
-  return(stringr::str_split(x , "_")[[1]][2])
+#' @example `sample_replicate("vAd_1")`
+#' output: `"1"`
+
+sample_replicate <- function(x) {
+  stringr::str_split(x , "_")[[1]][2] %>%
+    return()
 }
 
 
-#' Generate sample-level metadata from sample names
+#' Generate sample-level metadata from sample names. 
+#' 
+#' Will include columns named "sample", "timepoint", and "replicate" that store 
+#' sample names, sample time points, and sample replicate, respectively.
 #'
-#' @param sample_names vector: character vector of sample names from count matrix.
 #'
-#' @return tibble: tibble containing sample-level metadata including columns
-#' "sample", "timepoint", and "replicate" that store sample names, sample
-#' time points, and sample replicate number, respectively.
-#' @export
+#' @param sample_names vector: character vector of length (_S_) consisting of sample
+#' names from count data.
 #'
-#' @examples
-#' `meta_info_from_labels(colnames(count_matrix))`
+#' @return tibble: a (_S_ x 3) tibble with column names "sample", 
+#' "timepoint", and "replicate". "sample"holds sample_names; "timepoint" 
+#' stores sample time points; and "replicate" stores sample replicate
+#' 
+#' @note _S_ < m
+#'
+#' @example `meta <- meta_info_from_labels(colnames(count_data)[colnames(count_data)!='gene'])`
+
 meta_info_from_labels <- function(sample_names) {
   
-  # non-tidyverse
+  # #non-tidyverse
+  # #Method 1
+  # timepoints <- sapply(sample_names, timepoint_from_sample)
+  # replicate <- sapply(sample_names, sample_replicate)
+  # return(tibble::tibble(sample=sample_names, timepoint=timepoints, replicate=replicate))
+  # 
+  #Method 2
   tibble(
-    sample_names=sample_names,
-    sample=vapply(sample_names, timepoint_from_sample, "x"),
-    replicate=vapply(sample_names, sample_number, "x")
+    sample=sample_names,
+    timepoint=vapply(sample_names, timepoint_from_sample, "x"),
+    replicate=vapply(sample_names, sample_replicate, "x")
   ) %>%
     return()
   
-  # tidyverse
-  tibble(
-    sample=sample_names
-  ) %>%
-    mutate(sample=str_sub(sample,start=2)) %>%
-    separate(sample,into=c("timepoint","replicate"), sep="_") %>%
-  return()
+  # # tidyverse
+  #Method 3 - 
+  # tibble(
+  #   sample=sample_names
+  # ) %>%
+  #   dplyr::mutate(temp=str_sub(sample,start=2)) %>%
+  #   tidyr::separate(temp,into=c("timepoint","replicate"), sep="_") %>%
+  #   return()
 }
-meta_info_from_labels(colnames(counts[-c(1)]))
 
-#' Calculate total read counts for each sample in a count matrix.
+
+#' Calculate total read counts for each sample in a count data.
 #'
-#' @param count_matrix tibble: a (gene x sample) matrix of raw read counts where
-#' the first column `gene` has the gene name and remaining columns have counts
 #'
-#' @return vector: numeric vector of read totals from each sample
-#' @export
+#' @param count_data tibble: a (n x m) tibble of raw read counts.
 #'
-#' @examples
-#' `get_library_size(count_matrix)`
-get_library_size <- function(count_matrix) {
-  
-  sample_cols <- colnames(count_matrix)[-c(1)]
-  
+#' @return tibble or named vector of read totals from each sample. Vectors must 
+#' be length `_S_ `, a tibble can be `(1 x _S_)` with sample names as columns 
+#' names OR `(_S_ x 2)` with columns ("sample", "value")
+#'
+#' @examples `get_library_size(count_data)`
+
+get_library_size <- function(count_data) {
   # non-tidyverse
-  tibble(
-    sample_name=sample_cols,
-    counts=apply(count_matrix[,-c(1)], 2, sum)
-  ) %>%
+  # Method 1
+  # count_data %>%
+  #   apply(2,sum) %>%
+  #   return()
+  
+  #Tidyverse
+  #Method 2
+  count_data[colnames(count_data)!='gene'] %>%
+    dplyr::summarise(dplyr::across(everything(), ~ sum(.))) %>%
     return()
   
-  # tidyverse
-  pivot_longer(count_matrix, -c(gene), names_to="sample_name", values_to = "value") %>%
-    group_by(sample_name) %>%
-    summarize(counts = sum(value)) %>%
-    pivot_wider(names_from=sample_name,values_from=counts) %>%
-    pivot_longer(sample_cols,names_to="sample_name",values_to="counts") %>%
-  return()
+  # count_data %>%
+  #   # pivot_longer(cols=where(is.numeric))%>%
+  #   #dplyr::group_by(name) %>%
+  #   dplyr::summarise(size = sum(value)) %>%
+  #   return()
 
 }
 
 
-#' Normalize raw count matrix to counts per million.
-#' 
-#' Normalizes read counts using the following formula:
-#' 
-#' $C_{i, j} = \frac{X_{i, j}}{\frac{\sum \limits_{j}^N X_{i, j}}{10^6}}$
+#' Normalize raw count data to counts per million WITH pseudocounts using the 
+#' following formula:
+#'     (count + 1) / ((sample_library_size/10^6) + 1)
 #'
-#' @param count_matrix tibble: a (gene x sample) matrix of raw read counts.
 #'
-#' @return tibble: a (gene x sample) matrix with read count normalized to counts
-#' per million 
-#' @export
+#' @param count_data tibble: a (n x m) matrix of raw read counts.
+#'
+#' @return tibble: a (n x m) matrix with read count normalized to counts
+#' per million
 #'
 #' @examples
-#' `normalize_by_cpm(count_matrix)`
-normalize_by_cpm <- function(count_matrix) {
+#' `normalize_by_cpm(count_data)`
+
+normalize_by_cpm <- function(count_data) {
   
-  library_sizes <- get_library_size(count_matrix)
-  scale_factors <- library_sizes$counts / 10^6
+  ####For get_library_size() that returns vectors####
   
-  gene <- count_matrix$gene
-  mat <- select(count_matrix,-c(gene))
-  scaled_mat <- mat/scale_factors
+  # #Method 1: 
+  # library_sizes <-get_library_size(count_data[c(-1)])
+  # scale_factors <- library_sizes / 10^6
+  # return((count_data[-1] + 1)/ (scale_factors + 1))
   
-  return(scaled_mat)
+  # #Method 2:
+  # count_data %>%
+  #   mutate((.[c(2:9)]+1)/(get_library_size(.[c(-1)])/10^6)+1) %>%
+  #   return()
+  
+  
+  ####For get_library_size that returns tibbles
+  
+  # #Method 3:
+  # tibble <- get_library_size(count_data[c(-1)])/10^6
+  # return(cbind(count_data[1], (count_data[-1]+1)/(tibble[rep(1, nrow(count_data)),] +1 ) ))
+  
+  #Method 4: Tibble version of method 2
+  count_data %>%
+    mutate((.[c(-1)])/(unlist(get_library_size(.[c(-1)])/10^6))) %>%
+    return()
+  
+  # #Method 5: Tibble and a for loop
+  # temp<- count_data
+  # tibble <- get_library_size(count_data[c(-1)])/10^6
+  # for(column in colnames(tibble)){
+  #   temp[column] <- ((temp[column]+1)/(tibble[[column]][1]+ 1))
+  # }
+  # return(temp)
 }
-normalize_by_cpm(counts) -> out
 
 #' Normalize raw count matrix using DESeq2
 #'
@@ -193,25 +236,23 @@ deseq_normalize <- function(count_matrix, meta_data) {
 }
 
 
-#' Perform and plot PCA using a provided count matrix.
+#' Perform and plot PCA using processed data.
 #' 
 #' PCA is performed over genes, and samples should be colored by time point.
 #' Both `y` and `x` axis should have percent of explained variance included.
 #'
-#' @param count_matrix tibble: count matrix to perform PCA over.
-#' @param meta tibble: sample-level meta information
+#'
+#' @param data tibble: a (n x _S_) data set
+#' @param meta tibble: sample-level meta information (_S_ x 3)
 #' @param title string: title for plot
 #'
 #' @return ggplot: scatter plot showing each sample in the first two PCs. 
-#' @export
 #'
 #' @examples
-#' `plot_pca(count_matrix, meta, "Raw Count PCA")`
-plot_pca <- function(count_matrix, meta, title="") {
-  
-  genes <- count_matrix$gene
-  count_matrix <- select(count_matrix, -c(gene))
-  pca <- prcomp(t(count_matrix))
+#' `plot_pca(data, meta, "Raw Count PCA")`
+
+plot_pca <- function(data, meta, title="") {
+  pca <- prcomp(t(cpm_tibble))
   plot_data <- meta
   plot_data$PC1 <- pca$x[ , 1]
   plot_data$PC2 <- pca$x[ , 2]
@@ -226,26 +267,24 @@ plot_pca <- function(count_matrix, meta, title="") {
 
 
 #' Plot gene count distributions for each sample using boxplots.
-#' 
 #'
-#' @param count_matrix tibble: a (gene x sample) count matrix
+#'
+#' @param data tibble: a (n x _S_) data set
 #' @param scale_y_axis boolean: whether to scale the `y` axis to log10 values.
 #' Default is FALSE, and y-axis will not be transformed.
 #' @param title string: title to give the chart.
 #'
 #' @return ggplot: boxplot show gene count distributions for each sample
-#' @export
 #'
-#' @examples
-#' `plot_sample_distributions(count_matrix, scale_y_axis=TRUE, title='Raw Count Distributions')`
-plot_sample_distributions <- function(count_matrix, scale_y_axis=FALSE, title="") {
-  genes <- count_matrix$gene
-  count_matrix <- select(count_matrix, -c(gene))
-  long_counts <- tidyr::pivot_longer(count_matrix,
-                                     cols=colnames(count_matrix),
+#' @example `plot_sample_distributions(data, scale_y_axis=TRUE, title='Raw Count Distributions')`
+
+plot_sample_distributions <- function(data, scale_y_axis=FALSE, title="") {
+
+  long_counts <- tidyr::pivot_longer(data,
+                                     cols=colnames(data),
                                      names_to='sample',
                                      values_to='counts')
-
+  
   if (scale_y_axis) {
     # filter out counts == 0 so log10 below doesn't choke
     long_counts <- filter(long_counts,counts != 0)
@@ -254,7 +293,7 @@ plot_sample_distributions <- function(count_matrix, scale_y_axis=FALSE, title=""
   dist_plot <- ggplot2::ggplot(long_counts, ggplot2::aes(x=sample, y=counts, col=sample)) +
     ggplot2::geom_boxplot() + 
     ggplot2::ggtitle(title)
-    
+  
   if (scale_y_axis) {
     dist_plot <- dist_plot + ggplot2::scale_y_log10()
   }
@@ -265,8 +304,7 @@ plot_sample_distributions <- function(count_matrix, scale_y_axis=FALSE, title=""
 #' Plot relationship between mean read counts and variability over all genes.
 #'
 #'
-#' @param count_matrix tibble: a (gene x sample) data matrix containing raw or 
-#' normalized count values. 
+#' @param data tibble: a (n x _S_) data set
 #' @param scale_y_axis boolean: whether to scale to y-axis to log10 values. Default
 #' is false, and the y-axis will not be transformed.
 #' @param title string: title to give the chart.
@@ -276,20 +314,17 @@ plot_sample_distributions <- function(count_matrix, scale_y_axis=FALSE, title=""
 #' given gene. Each dot should have their transparency increased. The scatter
 #' plot should also be accompanied by a line representing the average mean and
 #' variance values.
-#' @export
 #'
-#' @examples
-#' `plot_variance_vs_mean(count_matrix, scale_y_axis=TRUE, title='variance vs mean (raw counts)')`
-plot_variance_vs_mean <- function(count_matrix, scale_y_axis=FALSE, title="") {
-  genes <- count_matrix$gene
-  count_matrix <- select(count_matrix, -c(gene))
-  means <- apply(count_matrix, 1, mean)
-  variances <- apply(count_matrix, 1, var)
+#' @example `plot_variance_vs_mean(data, scale_y_axis=TRUE, title='variance vs mean (raw counts)')`
+
+plot_variance_vs_mean <- function(data, scale_y_axis=FALSE, title="") {
+  means <- apply(data, 1, mean)
+  variances <- apply(data, 1, var)
   plot_data <- tibble::tibble(mean=means, variance=variances)
   plot_data$rank <- rank(plot_data$mean)
   mv_plot <- ggplot2::ggplot(plot_data, aes(x=rank, y=variance)) + 
     ggplot2::geom_point(alpha=0.5) +
-    ggplot2::geom_smooth() + 
+    ggplot2::geom_smooth(method='gam', formula = y ~ s(x, bs = "cs")) + 
     ggplot2::xlab("Rank(Mean)") + 
     ggplot2::ylab("Variance") + 
     ggplot2::ggtitle(title)
