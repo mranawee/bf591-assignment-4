@@ -138,7 +138,6 @@ get_library_size <- function(count_matrix) {
   return()
 
 }
-get_library_size(counts)
 
 
 #' Normalize raw count matrix to counts per million.
@@ -164,33 +163,32 @@ normalize_by_cpm <- function(count_matrix) {
   mat <- select(count_matrix,-c(gene))
   scaled_mat <- mat/scale_factors
   
-  return(cbind(gene,scaled_mat))
+  return(scaled_mat)
 }
 normalize_by_cpm(counts) -> out
 
 #' Normalize raw count matrix using DESeq2
 #'
 #' @param count_matrix tibble: a (gene x sample) matrix of raw reads
-#' @param meta_data tibble: sample-level information tibble containing time point,
-#' sample, and replicate information.
-#' @param design_formula formula: formula of comparision of interest
+#' @param meta_data tibble: sample-level information tibble corresponding to the
+#' count matrix columns
 #'
-#' @return tibble: DESeq2 normalized count matrix.
+#' @return tibble: DESeq2 normalized count matrix
 #' @export
 #'
 #' @examples
-#' `deseq_normalize(count_matrix, meta_data, ~ timepoint)`
-deseq_normalize <- function(count_matrix, meta_data, design_formula) {
+#' `deseq_normalize(count_matrix, meta_data)`
+deseq_normalize <- function(count_matrix, meta_data) {
   genes <- count_matrix$gene
   count_matrix <- select(count_matrix, -c(gene))
   dds <- DESeq2::DESeqDataSetFromMatrix(
     countData=count_matrix,
     colData=meta_data,
-    design=design_formula
+    design=~1 
   )
-  vsd <- DESeq2::vst(dds, blind=FALSE)
-  vsd <- tibble::as_tibble(SummarizedExperiment::assay(vsd)) %>%
-    mutate(gene=genes) %>%
+  dds <- estimateSizeFactors(dds)
+  norm <- DESeq2::counts(dds, normalized=TRUE)
+  norm <- tibble::as_tibble(norm) %>%
     return()
 }
 
