@@ -1,3 +1,8 @@
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("DESeq2")
+
 #Load Packages
 library(DESeq2)
 library(tidyverse)
@@ -16,9 +21,11 @@ library(tidyverse)
 #' @example `verse_counts <- read_data('verse_counts.tsv')`
 
 read_data <- function(filename){
-  return(NULL)
+  data <- read_delim(filename, '\t')
+  return(as_tibble(data))
 }
 
+verse_counts <- read_data('verse_counts.tsv')
 
 #' Filter out genes with zero variance
 #'
@@ -33,9 +40,12 @@ read_data <- function(filename){
 #' @example `filtered_counts <- filter_zero_var_genes(verse_counts)`
 
 filter_zero_var_genes <- function(verse_counts) {
-  return(NULL)
+  filtered <- verse_counts[rowSums(verse_counts[,-1]) > 0,]
+  return(filtered)
 }
 
+filt_v_counts <- filter_zero_var_genes(verse_counts)
+#rownames(filt_v_counts)
 
 #' Extract time point information from sample name
 #'
@@ -48,9 +58,11 @@ filter_zero_var_genes <- function(verse_counts) {
 #' output:`"Ad"`
 
 timepoint_from_sample <- function(str) {
-  return(NULL)
+  tp <- substr(str,2,3)
+  return(tp)
 }
 
+timepoint_from_sample('vAd_2')
 
 #' Grab sample replicate number from sample name
 #'
@@ -64,9 +76,11 @@ timepoint_from_sample <- function(str) {
 #' output: `"1"`
 
 sample_replicate <- function(str) {
-  return(NULL)
+  samp <- str_sub(str, -1)
+  return(samp)
 }
 
+sample_replicate('vPO_1')
 
 #' Generate sample-level metadata from sample names. 
 #' 
@@ -86,14 +100,20 @@ sample_replicate <- function(str) {
 #' @example `meta <- meta_info_from_labels(colnames(count_data)[colnames(count_data)!='gene'])`
 
 meta_info_from_labels <- function(sample_names) {
-  return(NULL)
+  tib <- as_tibble(sample_names)
+  colnames(tib) <- 'sample'
+  tib$timepoint <- timepoint_from_sample(tib$sample)
+  tib$replicate <- sample_replicate(tib$sample)
+  return(tib)
 }
 
+meta_info_from_labels(colnames(filt_v_counts)[colnames(filt_v_counts)!='gene'])
 
 #' Calculate total read counts for each sample in a count data.
 #'
 #'
-#' @param count_data tibble: a (n x m) tibble of raw read counts.
+#' @param count_
+#' data tibble: a (n x m) tibble of raw read counts.
 #'
 #' @return named vector: numeric vector of read totals from each sample
 #'
