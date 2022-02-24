@@ -107,7 +107,6 @@ meta_info_from_labels <- function(sample_names) {
   return(tib)
 }
 
-meta_info_from_labels(colnames(filt_v_counts)[colnames(filt_v_counts)!='gene'])
 
 #' Calculate total read counts for each sample in a count data.
 #'
@@ -119,10 +118,13 @@ meta_info_from_labels(colnames(filt_v_counts)[colnames(filt_v_counts)!='gene'])
 #'
 #' @examples `get_library_size(count_data)`
 
-get_library_size <- function(count_data) {
-  return(NULL)
+get_library_size <- function(data) {
+  data[colnames(data)!='gene'] %>%
+    summarise(across(everything(),~sum(.))) %>%
+  return(data)
 }
 
+get_library_size(filt_v_counts)
 
 #' Normalize raw count data to counts per million WITH pseudocounts using the 
 #' following formula:
