@@ -21,7 +21,7 @@ library(tidyverse)
 #' @example `verse_counts <- read_data('verse_counts.tsv')`
 
 read_data <- function(filename){
-  data <- read_delim(filename, '\t')
+  data <- read_tsv(filename, '\t')
   return(as_tibble(data))
 }
 
@@ -107,7 +107,7 @@ meta_info_from_labels <- function(sample_names) {
   return(tib)
 }
 
-
+meta <- meta_info_from_labels(colnames(filt_v_counts)[colnames(filt_v_counts)!='gene'])
 #' Calculate total read counts for each sample in a count data.
 #'
 #'
@@ -139,10 +139,17 @@ get_library_size(filt_v_counts)
 #' @examples
 #' `normalize_by_cpm(count_data)`
 
-normalize_by_cpm <- function(count_data) { 
-  return(NULL)
+normalize_by_cpm <- function(data) { 
+  gene <- data$gene
+  size_factors <- get_library_size(data[c(-1)]) %>%
+    slice(1) %>% unlist(., use.names=FALSE)
+  cpm <- as_tibble(t(apply(data[-1],1,function(x) x/size_factors*10^6)))
+  return(cbind(gene,cpm))
+  
 }
 
+norm_cpm <- normalize_by_cpm(filt_v_counts)
+norm_cpm
 
 #' Normalize raw count data using DESeq2
 #'
@@ -157,9 +164,23 @@ normalize_by_cpm <- function(count_data) {
 #' @example ' `deseq_normalize(count_data, meta_data, ~ timepoint)`
 
 deseq_normalize <- function(count_data, meta_data, design_formula) {
-  return(NULL)
+  genes <- count_data$gene
+  count_data <- select(count_data, -c(gene))
+  dds <- DESeqDataSetFromMatrix(
+    countData=count_data,
+    colData=meta_data,
+    design=~1
+  )
+  dds <- estimateSizeFactors(dds)
+  norm <- counts(dds, normalized=TRUE)
+  norm <- as_tibble(norm) %>%
+    mutate(gene=genes) %>%
+    relocate(gene) %>% # move `gene` column to be first
+    return()
 }
 
+norm_deseq <- deseq_normalize(filt_v_counts, meta)
+norm_deseq
 
 #' Perform and plot PCA using processed data.
 #' 
@@ -176,10 +197,21 @@ deseq_normalize <- function(count_data, meta_data, design_formula) {
 #' @examples
 #' `plot_pca(data, meta, "Raw Count PCA")`
 
-plot_pca <- function(data, meta, title="") {
-  return(NULL)
+plot_pca <- function(data, meta, title) {
+  pca <- prcomp(scale(t(data)), center=FALSE, scale=FALSE)
+  plot_data <- meta
+  plot_data$PC1 <- pca$x[ , 1]
+  plot_data$PC2 <- pca$x[ , 2]
+  percent_var <- pca$sdev^2 / sum( pca$sdev^2 )
+  pca_plot <- ggplot(plot_data, ggplot2::aes(x=PC1, y=PC2, col=timepoint)) +
+    geom_point() +
+    xlab(paste0("PC1: ",round(percent_var[1] * 100),"% variance")) +
+    ylab(paste0("PC2: ",round(percent_var[2] * 100),"% variance")) +
+    ggtitle(title)
+  return(pca_plot)
 }
 
+plot_pca(filt_v_counts, meta, "Raw Count PCA")
 
 #' Plot gene count distributions for each sample using boxplots.
 #' 
@@ -194,9 +226,29 @@ plot_pca <- function(data, meta, title="") {
 #' @example `plot_sample_distributions(data, scale_y_axis=TRUE, title='Raw Count Distributions')`
 
 plot_sample_distributions <- function(data, scale_y_axis=FALSE, title="") {
-  return(NULL)
+  long_counts <- pivot_longer(data,
+                                  cols=colnames(data),
+                                  names_to='sample',
+                                  values_to='counts') %>%
+    
+    mutate(sample=factor(sample,levels=colnames(data)))
+  
+  if (scale_y_axis) {
+    # filter out counts == 0 so log10 below doesn't choke
+    long_counts <- filter(long_counts,counts != 0)
+  }
+  
+  dist_plot <- ggplot(long_counts, aes(x=sample, y=counts, col=sample)) +
+    geom_boxplot() +
+    ggtitle(title)
+  
+  if (scale_y_axis) {
+    dist_plot <- dist_plot + scale_y_log10()
+  }
+  return(dist_plot)
 }
 
+plot_sample_distributions(filt_v_counts, scale_y_axis = TRUE, title = 'Raw Count Distributions')
 
 #' Plot relationship between mean read counts and variability over all genes.
 #'
