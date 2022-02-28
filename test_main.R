@@ -229,8 +229,8 @@ test_that("normalize_by_cpm() has the correct output",{
 test_that("deseq_normalize() has correct output",{
   meta_data <- tibble(sample=c("vK3_2", "vMr_1","vK3_1", "vMr_2"), timepoint=c("K3", "Mr", "K3", "Mr"), replicate=c("2","1","1","2"))
   
-  normalized <- deseq_normalize(td2, meta_data, ~ timepoint)%>%
-    mutate(across(where(is.numeric), round, 3))
+  normalized <- suppressWarnings(deseq_normalize(td2, meta_data, ~ timepoint) %>%
+    mutate(across(where(is.numeric), round, 3)), class='warning' )
   
   sample_answers <-tibble(gene = c("DYOG91349", "MCAB52159", "QUIS14366", "DRWM24408"), 
                           vK3_2 =  c(23.1379797208499, 13.0779885378717, 25.1499779574455, 456.723599707211), 
@@ -251,9 +251,6 @@ test_that("deseq_normalize() has correct output",{
   
   #Testing colnames, must be in the same order
   expect_named(normalized, colnames(td2))
-  
-  sa <- sample_answers
-  sa[2:5] <- floor(sa[2:5])
   
   #testing for rownames
   expect(isFALSE(has_rownames(normalized)), "Your deseq_normalized() output has rownames, do not put rownames on your tibbles")
